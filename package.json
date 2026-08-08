@@ -1,0 +1,20 @@
+{
+	"name": "@turystack/architecture-pattern",
+	"description": "Architecture constitution skill — the law that survives a change of stack: topology, layers, contracts, consistency, delivery boundaries, cross-stack seams, idempotency, resilience and observability. Installed into .claude/skills and/or .codex/skills via the turystack CLI.",
+	"private": false,
+	"version": "1.0.0",
+	"sideEffects": false,
+	"publishConfig": {
+		"access": "public"
+	},
+	"engines": {
+		"node": ">=20"
+	},
+	"files": [
+		"*.md"
+	],
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/turystack/architecture-pattern.git"
+	}
+}
