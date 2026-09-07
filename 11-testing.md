@@ -4,17 +4,21 @@
 decision of which proofs exist and what each level is responsible for
 guaranteeing — not how many tests there are.
 
+**Rules defined here:** `ARC-TST-1` · `ARC-TST-2` · `ARC-TST-3` · `ARC-TST-4`
+· `ARC-TST-5` · `ARC-TST-6` · `ARC-TST-7` — the law is the *Invariants* table
+below; every ❌ item cites the id it violates.
+
 ## Invariants
 
-| ID | Law | class |
-|---|---|---|
-| ARC-TST-1 | Each test level has a distinct question; levels do not overlap by accident. | constitutional |
-| ARC-TST-2 | The lowest level runs with no infrastructure at all. | constitutional |
-| ARC-TST-3 | Test data comes from a factory derived from the contract, never from a hand-written literal. | constitutional |
-| ARC-TST-4 | Behavior that only real infrastructure decides is proved against real infrastructure. | constitutional |
-| ARC-TST-5 | An asynchronous handler has a duplicate-delivery case **and** an out-of-order delivery case. | constitutional |
-| ARC-TST-6 | A test that depends on infrastructure runs in a separate configuration; the default suite does not require it. | constitutional |
-| ARC-TST-7 | A test fails loud when the infrastructure is missing; it never passes empty. | constitutional |
+| ID | Law | Class | Gate |
+|---|---|---|---|
+| ARC-TST-1 | Each test level has a distinct question; levels do not overlap by accident. | constitutional | `gate:test-levels` |
+| ARC-TST-2 | The lowest level runs with no infrastructure at all. | constitutional | `gate:unit-no-infra` |
+| ARC-TST-3 | Test data comes from a factory derived from the contract, never from a hand-written literal. | constitutional | `gate:no-literal-fixture` |
+| ARC-TST-4 | Behavior that only real infrastructure decides is proved against real infrastructure. | constitutional | `gate:e2e-real-infra` |
+| ARC-TST-5 | An asynchronous handler has a duplicate-delivery case **and** an out-of-order delivery case. | constitutional | `test:out-of-order` |
+| ARC-TST-6 | A test that depends on infrastructure runs in a separate configuration; the default suite does not require it. | constitutional | `gate:test-config-split` |
+| ARC-TST-7 | A test fails loud when the infrastructure is missing; it never passes empty. | constitutional | `gate:fail-loud` |
 
 ## ARC-TST-1 · the question each level asks
 

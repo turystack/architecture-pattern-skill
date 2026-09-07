@@ -4,18 +4,22 @@
 dependency will go down, it is what happens to the rest when it does. Resilience
 is deciding that beforehand, not discovering it in production.
 
+**Rules defined here:** `ARC-RES-1` · `ARC-RES-2` · `ARC-RES-3` · `ARC-RES-4`
+· `ARC-RES-5` · `ARC-RES-6` · `ARC-RES-7` · `ARC-RES-8` — the law is the
+*Invariants* table below; every ❌ item cites the id it violates.
+
 ## Invariants
 
-| ID | Law | class |
-|---|---|---|
-| ARC-RES-1 | Every call that leaves the process has a timeout. No operation may hang indefinitely. | constitutional |
-| ARC-RES-2 | Retry only over potentially transient failure; a client error does not start working by being resent. | constitutional |
-| ARC-RES-3 | Retry uses backoff with jitter and an attempt ceiling. | constitutional |
-| ARC-RES-4 | Retry requires idempotency (`ARC-IDM-7`). | constitutional |
-| ARC-RES-5 | Once attempts are exhausted, the item goes to a permanent-failure strategy — it never disappears. | constitutional |
-| ARC-RES-6 | A degraded dependency does not cascade: it fails fast instead of consuming the caller's resources. | constitutional |
-| ARC-RES-7 | Degradation is decided per operation: what can serve without the dependency, serves; what cannot, fails. | constitutional |
-| ARC-RES-8 | Timeout, retry and degradation are **expected and observable** failures, not silent exceptions. | constitutional |
+| ID | Law | Class | Gate |
+|---|---|---|---|
+| ARC-RES-1 | Every call that leaves the process has a timeout. No operation may hang indefinitely. | constitutional | `gate:timeout-declared` |
+| ARC-RES-2 | Retry only over potentially transient failure; a client error does not start working by being resent. | constitutional | `manual` |
+| ARC-RES-3 | Retry uses backoff with jitter and an attempt ceiling. | constitutional | `manual` |
+| ARC-RES-4 | Retry requires idempotency (`ARC-IDM-7`). | constitutional | `manual` |
+| ARC-RES-5 | Once attempts are exhausted, the item goes to a permanent-failure strategy — it never disappears. | constitutional | `manual` |
+| ARC-RES-6 | A degraded dependency does not cascade: it fails fast instead of consuming the caller's resources. | constitutional | `manual` |
+| ARC-RES-7 | Degradation is decided per operation: what can serve without the dependency, serves; what cannot, fails. | constitutional | `manual` |
+| ARC-RES-8 | Timeout, retry and degradation are **expected and observable** failures, not silent exceptions. | constitutional | `manual` |
 
 ## The composition
 

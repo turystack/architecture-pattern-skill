@@ -4,18 +4,22 @@
 and trace of one operation must be recognizable as the same operation —
 otherwise you have three sources that answer no question at all.
 
+**Rules defined here:** `ARC-OBS-1` · `ARC-OBS-2` · `ARC-OBS-3` · `ARC-OBS-4`
+· `ARC-OBS-5` · `ARC-OBS-6` · `ARC-OBS-7` · `ARC-OBS-8` — the law is the
+*Invariants* table below; every ❌ item cites the id it violates.
+
 ## Invariants
 
-| ID | Law | class |
-|---|---|---|
-| ARC-OBS-1 | Every operation carries a correlation identifier, generated at the edge when it did not come from outside. | constitutional |
-| ARC-OBS-2 | The correlation crosses process boundaries: the publisher sends it, the consumer restores it. | constitutional |
-| ARC-OBS-3 | Logs are structured: a stable message plus searchable fields. Interpolation is not context. | constitutional |
-| ARC-OBS-4 | An error is logged once, at the highest boundary with enough context. | constitutional |
-| ARC-OBS-5 | Dimensions and attributes are low cardinality. An identifier is never a metric dimension. | constitutional |
-| ARC-OBS-6 | A business metric is emitted only after confirmed success. | constitutional |
-| ARC-OBS-7 | An alert represents actionable impact, not an individual exception. | constitutional |
-| ARC-OBS-8 | Instrumentation never changes behavior: failing to observe does not fail the operation. | constitutional |
+| ID | Law | Class | Gate |
+|---|---|---|---|
+| ARC-OBS-1 | Every operation carries a correlation identifier, generated at the edge when it did not come from outside. | constitutional | `gate:correlation` |
+| ARC-OBS-2 | The correlation crosses process boundaries: the publisher sends it, the consumer restores it. | constitutional | `manual` |
+| ARC-OBS-3 | Logs are structured: a stable message plus searchable fields. Interpolation is not context. | constitutional | `grit:no-log-interpolation` |
+| ARC-OBS-4 | An error is logged once, at the highest boundary with enough context. | constitutional | `grit:no-log-and-rethrow` |
+| ARC-OBS-5 | Dimensions and attributes are low cardinality. An identifier is never a metric dimension. | constitutional | `grit:no-id-as-metric-label` |
+| ARC-OBS-6 | A business metric is emitted only after confirmed success. | constitutional | `manual` |
+| ARC-OBS-7 | An alert represents actionable impact, not an individual exception. | constitutional | `manual` |
+| ARC-OBS-8 | Instrumentation never changes behavior: failing to observe does not fail the operation. | constitutional | `manual` |
 
 ## Seam · the correlation
 

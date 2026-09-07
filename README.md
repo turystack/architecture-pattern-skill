@@ -22,6 +22,7 @@ pnpm add -D @turystack/architecture-pattern
 - [Idempotency](09-idempotency.md)
 - [Resilience](10-resilience.md)
 - [Testing](11-testing.md)
+- [Data lifecycle](12-data-lifecycle.md)
 - [Skill manifest](SKILL.md)
 
 ## Documentation

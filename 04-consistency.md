@@ -4,20 +4,26 @@
 same time?** The answer picks the mechanism. Not choosing is choosing the worst
 option by default — a partial effect nobody detects.
 
+**Rules defined here:** `ARC-CON-1` · `ARC-CON-2` · `ARC-CON-3` · `ARC-CON-4`
+· `ARC-CON-5` · `ARC-CON-6` · `ARC-CON-7` · `ARC-CON-8` · `ARC-CON-9` ·
+`ARC-CON-10` · `ARC-CON-11` — the law is the *Invariants* table below; every ❌
+item cites the id it violates.
+
 ## Invariants
 
-| ID | Law | class |
-|---|---|---|
-| ARC-CON-1 | Every write operation declares its strategy: transaction, compensation or event. | constitutional |
-| ARC-CON-2 | A transaction is the size of the atomicity required, never larger. | constitutional |
-| ARC-CON-3 | A transaction is never left open across an external call. | constitutional |
-| ARC-CON-4 | A transaction is not a concurrency tool: for concurrency, use a constraint, a version or a lock. | constitutional |
-| ARC-CON-5 | An event is emitted only after the write commits. | constitutional |
-| ARC-CON-6 | When data and event have to be atomic, the event is persisted in the same transaction and dispatched afterwards. | constitutional |
-| ARC-CON-7 | Each operation's consistency level is an explicit decision; not everything has to be immediate. | constitutional |
-| ARC-CON-8 | Write concurrency is handled explicitly: no operation assumes it runs alone. | constitutional |
-| ARC-CON-9 | A read replica is derived, never authoritative: every write declares which reads it invalidates. | constitutional |
-| ARC-CON-10 | A write applied before confirmation declares its rollback and reconciles with the authoritative response. | constitutional |
+| ID | Law | Class | Gate |
+|---|---|---|---|
+| ARC-CON-1 | Every write operation declares its strategy: transaction, compensation or event. | constitutional | `manual` |
+| ARC-CON-2 | A transaction is the size of the atomicity required, never larger. | constitutional | `manual` |
+| ARC-CON-3 | A transaction is never left open across an external call. | constitutional | `grit:no-external-call-in-tx` |
+| ARC-CON-4 | A transaction is not a concurrency tool: for concurrency, use a constraint, a version or a lock. | constitutional | `manual` |
+| ARC-CON-5 | An event is emitted only after the write commits. | constitutional | `grit:no-publish-in-tx` |
+| ARC-CON-6 | When data and event have to be atomic, the event is persisted in the same transaction and dispatched afterwards. | constitutional | `manual` |
+| ARC-CON-7 | Each operation's consistency level is an explicit decision; not everything has to be immediate. | constitutional | `manual` |
+| ARC-CON-8 | Write concurrency is handled explicitly: no operation assumes it runs alone. | constitutional | `manual` |
+| ARC-CON-9 | A read replica is derived, never authoritative: every write declares which reads it invalidates. | constitutional | `gate:mutation-invalidates` |
+| ARC-CON-10 | A write applied before confirmation declares its rollback and reconciles with the authoritative response. | constitutional | `grit:optimistic-write-shape` |
+| ARC-CON-11 | A write whose effect reaches other entities declares its blast radius; the impacted set comes from the authority as a read, before the decision to confirm. | constitutional | `manual` |
 
 ## Choosing the mechanism
 
@@ -126,6 +132,126 @@ else.
 Without the three steps declared, the optimistic write is not allowed. The safe
 path — wait for the confirmation and invalidate (`ARC-CON-9`) — is always valid.
 
+## ARC-CON-11 · the blast radius of a write
+
+`ARC-CON-9` asks which **reads** a write invalidates. `ARC-CON-11` asks the
+harder question: which **entities** it changes besides the one named in the
+request.
+
+```text
+delete a user            → their sessions die, their tickets are orphaned,
+                           the team they alone administer loses its admin
+deactivate a plan        → every subscription on it stops renewing
+remove a role            → the 14 people holding it lose 3 capabilities
+archive an organization  → its projects, invites and integrations go with it
+```
+
+Every line above is an effect the person clicking cannot see from where they
+stand. A destructive write that reaches other entities is therefore **not
+confirmable on a name alone**: the confirmation has to state what else it takes
+with it, and it has to state it before the decision, not in a toast afterwards.
+
+The impacted set is a **read of the authority**, published in the same contract
+as everything else (`ARC-CTR-1`):
+
+```text
+❌  the consumer counts what it happens to have in memory
+    lists the 10 loaded rows, hides the other 4,300
+    and misses entirely the effects it never fetched
+
+✅  the authority answers "what does this write reach?"
+    counts + samples + the categories affected, one read
+    the consumer renders what it received
+```
+
+The consumer counting is not a shortcut, it is a **second implementation of the
+cascade** — and the copy diverges the first time a new relation is added on the
+backend, silently, in the direction of under-reporting.
+
+Two properties keep the preview honest:
+
+```text
+non-binding   the preview is a snapshot; the authoritative write re-evaluates
+              the cascade at execution time
+not a lock    reading the radius does not freeze the entities in it
+```
+
+Between the preview and the confirm, the world moves: rows are added, others
+disappear. The preview exists to make the decision **informed**, not to make it
+atomic — the write is what decides, and it decides on the state it finds. When a
+divergence between the two matters to the product (a count that would change the
+decision), the write says so with a rule error (`ARC-ERR-4`), it does not paper
+over it.
+
+An irreversible write with a radius nobody measured is how a single click erases
+what nobody knew was attached.
+
+### Worked example · archiving an organization
+
+**1. The authority answers what the write reaches.** The impacted set is a read
+of a real relationship — the things that depend on this one — not an invented
+"preview" resource. It answers with counts first, samples second, because the
+consumer needs the magnitude before it needs the names:
+
+```text
+read: the organization's dependents
+
+{
+  reversible: false,
+  impacted: [
+    { kind: 'project',     count: 34,   sample: ['Atlas', 'Beacon', 'Cinder'] },
+    { kind: 'member',      count: 128,  sample: ['ana@…', 'bruno@…'] },
+    { kind: 'integration', count: 3,    sample: ['Stripe', 'Slack', 'S3'] },
+    { kind: 'invite',      count: 12,   sample: [] }
+  ],
+  blocking: [
+    { reason: 'open_invoice', count: 1 }
+  ]
+}
+```
+
+Two fields carry most of the value. `reversible` decides whether the
+confirmation is a normal one or a typed one. `blocking` is what turns a scary
+dialog into a useful one: something in the radius says the write must not
+happen at all, and the user learns it **before** committing to the decision,
+not from a `409` afterwards.
+
+**2. The confirmation renders what it received, and nothing it inferred.**
+
+```text
+Archive Atlas Group?
+
+This also archives          34 projects · 128 members · 3 integrations
+                            12 pending invites are cancelled
+
+Blocked                     1 open invoice must be settled first
+
+[ Cancel ]                  [ Archive ]  ← inert while `blocking` is non-empty,
+                                            with the reason attached (ARC-ERR-9)
+```
+
+The counts are the authority's, verbatim. The consumer never sums what it has
+in memory (`ARC-CON-11`), never hides a category because the sample came back
+empty, and never renders the button as absent — a blocked action stays visible
+and inert with its reason.
+
+**3. The write re-evaluates at execution time.** The preview was a snapshot
+(`non-binding`), so the operation counts again inside its own consistency
+boundary and decides on what it finds. If the difference matters to the
+decision, it refuses with a rule error rather than silently doing more than the
+user agreed to:
+
+```text
+preview said 34 projects  →  write finds 34  →  proceed
+preview said 34 projects  →  write finds 41  →  rule error: the radius grew
+                                                 (ARC-ERR-4), user decides again
+preview said 34 projects  →  write finds 30  →  proceed; shrinking is safe
+```
+
+Growth needs a new decision because the user consented to a smaller blast.
+Shrinking does not, because everything they agreed to destroy is still a
+superset of what will be destroyed.
+
 ## Never do
 
 - Writing to two tables without declaring whether they have to be atomic.
@@ -138,3 +264,8 @@ path — wait for the confirmation and invalidate (`ARC-CON-9`) — is always va
 - Deciding a business rule on a replica value instead of the source.
 - Applying an optimistic effect with no snapshot, no reconciliation, or
   reverting in silence.
+- Confirming a write that cascades without stating what it reaches.
+- Computing the impacted set in the consumer instead of reading it from the
+  authority.
+- Treating the impact preview as a lock, or as a promise the write will honor
+  unchanged.

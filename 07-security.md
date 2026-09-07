@@ -5,22 +5,27 @@ is born, who has the authority to authorize, and where sensitive data must not
 pass. Cryptography, rotation and infrastructure hardening are operations, not
 design.
 
+**Rules defined here:** `ARC-SEC-1` · `ARC-SEC-2` · `ARC-SEC-3` · `ARC-SEC-4`
+· `ARC-SEC-5` · `ARC-SEC-6` · `ARC-SEC-7` · `ARC-SEC-8` · `ARC-SEC-9` ·
+`ARC-SEC-10` · `ARC-SEC-11` · `ARC-SEC-12` — the law is the *Invariants* table
+below; every ❌ item cites the id it violates.
+
 ## Invariants
 
-| ID | Law | class |
-|---|---|---|
-| ARC-SEC-1 | Scope and ownership come from the authenticated context, never from a field sent by the client. | constitutional |
-| ARC-SEC-2 | The backend is the authorization authority. Hiding in the client is presentation, never enforcement. | constitutional |
-| ARC-SEC-3 | Authorization is operation **plus** resource: a global role is not enough. | constitutional |
-| ARC-SEC-4 | Input is validated at the edge; an unknown field is rejected, not ignored. | constitutional |
-| ARC-SEC-5 | Mass assignment is impossible by construction: input reaches persistence only through an explicit projection. | constitutional |
-| ARC-SEC-6 | A secret is hashed at rest and compared in a timing-resistant way. | constitutional |
-| ARC-SEC-7 | Secrets and PII never enter a log, span, metric, bundle, URL or response. | constitutional |
-| ARC-SEC-8 | A request coming from a third party has its origin verified before any effect. | constitutional |
-| ARC-SEC-9 | A sensitive operation is traceable: who ran it and when. | constitutional |
-| ARC-SEC-10 | Untrusted data is neutralized at the point of **output**, according to the destination interpreter. Validating the input is no substitute. | constitutional |
-| ARC-SEC-11 | A credential has a single owner in the process; the consumer reads through its public surface, never from storage. | constitutional |
-| ARC-SEC-12 | A permission identifier comes from the product's single catalogue, published by the backend; never a string written in the consumer. | constitutional |
+| ID | Law | Class | Gate |
+|---|---|---|---|
+| ARC-SEC-1 | Scope and ownership come from the authenticated context, never from a field sent by the client. | constitutional | `grit:no-scope-from-input` |
+| ARC-SEC-2 | The backend is the authorization authority. Whatever the client does about it — hiding, disabling, explaining — is presentation, never enforcement. | constitutional | `manual` |
+| ARC-SEC-3 | Authorization is operation **plus** resource: a global role is not enough. | constitutional | `gate:acl-coverage` |
+| ARC-SEC-4 | Input is validated at the edge; an unknown field is rejected, not ignored. | constitutional | `gate:schema-strict` |
+| ARC-SEC-5 | Mass assignment is impossible by construction: input reaches persistence only through an explicit projection. | constitutional | `grit:no-mass-assignment` |
+| ARC-SEC-6 | A secret is hashed at rest and compared in a timing-resistant way. | constitutional | `grit:no-plain-secret-compare` |
+| ARC-SEC-7 | Secrets and PII never enter a log, span, metric, bundle, URL or response. | constitutional | `gate:secret-scan` |
+| ARC-SEC-8 | A request coming from a third party has its origin verified before any effect. | constitutional | `gate:webhook-signature` |
+| ARC-SEC-9 | A sensitive operation is traceable: who ran it and when. | constitutional | `manual` |
+| ARC-SEC-10 | Untrusted data is neutralized at the point of **output**, according to the destination interpreter. Validating the input is no substitute. | constitutional | `grit:no-unsafe-output` |
+| ARC-SEC-11 | A credential has a single owner in the process; the consumer reads through its public surface, never from storage. | constitutional | `biome:noRestrictedImports` |
+| ARC-SEC-12 | A permission identifier comes from the product's single catalogue, published by the backend; never a string written in the consumer. | constitutional | `grit:no-permission-literal` |
 
 ## Seam · authorization authority
 
@@ -28,22 +33,34 @@ Third seam. **One authority, two ends.**
 
 ```text
 frontend                                 backend
-hides what is not allowed   ────────►    revalidates every request
+states what is not allowed  ────────►    revalidates every request
 (experience)                             (enforcement)
 ```
 
-The frontend hiding an action the user has no permission for is **experience**:
-it keeps the user from trying something that will fail. It is not protection —
-the same endpoint stays reachable by any client.
+The frontend reacting to a permission the user does not have is **experience**:
+it keeps them from trying something that will fail. It is not protection — the
+same endpoint stays reachable by any client.
 
 ```text
-❌  the button is gone, so the route is protected
-✅  the button is gone AND the route validates again
+❌  the control is off, so the route is protected
+✅  the control is off AND the route validates again
 ```
 
 `ARC-SEC-2` is the law that keeps the wrong reasoning from taking hold. Every
 time someone asks "do I need to validate again in the backend if the UI already
-hides it?", the answer is yes, always.
+blocks it?", the answer is yes, always.
+
+**How** the client reacts is `ARC-ERR-9`, and it is deliberately not "hide": the
+action stays visible and inert with its reason, the denied surface renders the
+reason in place of the content. Neither hiding nor disabling was ever
+enforcement, so the choice between them is a UX decision — and the version that
+tells the user what is missing is the one the product ships.
+
+Two constraints come from this side of the seam. The reason names the **missing
+permission** — from the catalogue (`ARC-SEC-12`), never a hand-written string —
+and never the data behind it (`ARC-SEC-7`): "requires the Export billing
+permission" is a reason; anything quoting the records it would have shown is a
+leak with a helpful tone.
 
 ## ARC-SEC-1 · the anti-IDOR law
 
@@ -86,7 +103,7 @@ the write surface a decision, not a side effect.
 log with the whole object       "just for debugging"
 URL with a personal identifier  sticks in access logs and history
 span with the payload           telemetry is retained and shared
-metric with an id as dimension  leaks and explodes cardinality (ARC-11)
+metric with an id as dimension  leaks and explodes cardinality (ARC-OBS-5)
 error message to the client     leaks another user's data
 ```
 
@@ -137,7 +154,7 @@ and swapping the storage medium are one-file changes. Without it, each of those
 is a hunt — and the forgotten copy is the one still authenticating after logout.
 
 In the frontend this is the session module; in the backend, the configuration
-service or the secret manager (`ARC-15`). It is the same law: **whoever needs
+service or the secret manager (`ARC-TOP-6`). It is the same law: **whoever needs
 the credential asks for it, never fetches it**.
 
 ## ARC-SEC-12 · permission is a catalogue too
@@ -162,7 +179,9 @@ consequence.
 ## Never do
 
 - Accept scope, tenant or owner coming from the request body.
-- Treat hidden UI as protection.
+- Treat blocked UI — hidden or inert — as protection.
+- Erase a control instead of stating why it is unavailable (`ARC-ERR-9`).
+- Put the data behind the permission into the reason text.
 - Authorize by role alone, without checking the resource.
 - Pass the entire request body to persistence.
 - Compare a secret with plain equality.

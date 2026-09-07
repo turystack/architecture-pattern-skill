@@ -4,17 +4,21 @@
 is bad, but because no sender can tell "it failed" from "it answered and the
 answer was lost". A duplicate is not an edge case: it is the contract.
 
+**Rules defined here:** `ARC-IDM-1` · `ARC-IDM-2` · `ARC-IDM-3` · `ARC-IDM-4`
+· `ARC-IDM-5` · `ARC-IDM-6` · `ARC-IDM-7` — the law is the *Invariants* table
+below; every ❌ item cites the id it violates.
+
 ## Invariants
 
-| ID | Law | class |
-|---|---|---|
-| ARC-IDM-1 | Every asynchronous operation assumes duplicate delivery. | constitutional |
-| ARC-IDM-2 | The deduplication key is stable and comes from the fact, never generated on arrival. | constitutional |
-| ARC-IDM-3 | The handler is **commutative**: an old event arriving after a new one does not corrupt state. | constitutional |
-| ARC-IDM-4 | The transition is a function of `(current state, event)`, never of arrival order. | constitutional |
-| ARC-IDM-5 | An event carries absolute state, never a delta. | constitutional |
-| ARC-IDM-6 | A repeatable request carries an idempotency key when repeating it produces an effect. | constitutional |
-| ARC-IDM-7 | An operation with retry is idempotent; retry over one that is not duplicates the effect. | constitutional |
+| ID | Law | Class | Gate |
+|---|---|---|---|
+| ARC-IDM-1 | Every asynchronous operation assumes duplicate delivery. | constitutional | `test:duplicate-delivery` |
+| ARC-IDM-2 | The deduplication key is stable and comes from the fact, never generated on arrival. | constitutional | `manual` |
+| ARC-IDM-3 | The handler is **commutative**: an old event arriving after a new one does not corrupt state. | constitutional | `test:out-of-order` |
+| ARC-IDM-4 | The transition is a function of `(current state, event)`, never of arrival order. | constitutional | `manual` |
+| ARC-IDM-5 | An event carries absolute state, never a delta. | constitutional | `manual` |
+| ARC-IDM-6 | A repeatable request carries an idempotency key when repeating it produces an effect. | constitutional | `manual` |
+| ARC-IDM-7 | An operation with retry is idempotent; retry over one that is not duplicates the effect. | constitutional | `manual` |
 
 ## Idempotent is not commutative
 

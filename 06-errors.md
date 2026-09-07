@@ -5,18 +5,23 @@ frontend branches on, and that is why this section lives in the constitution and
 not in a stack skill. A catalogue with no owner is a contract that drifts with
 nobody noticing.
 
+**Rules defined here:** `ARC-ERR-1` · `ARC-ERR-2` · `ARC-ERR-3` · `ARC-ERR-4`
+· `ARC-ERR-5` · `ARC-ERR-6` · `ARC-ERR-7` · `ARC-ERR-8` · `ARC-ERR-9` — the
+law is the *Invariants* table below; every ❌ item cites the id it violates.
+
 ## Invariants
 
-| ID | Law | class |
-|---|---|---|
-| ARC-ERR-1 | The code catalogue is one per product; never per module. | constitutional |
-| ARC-ERR-2 | The code is stable and is the contract; the message is human and may change. | constitutional |
-| ARC-ERR-3 | An error is thrown with a category class and a catalogue key, never with a literal string. | constitutional |
-| ARC-ERR-4 | The category decides the meaning, and meaning has a layer: shape → boundary; existence → operation; rule → domain; identity and permission → security. | constitutional |
-| ARC-ERR-5 | Internal detail — stack, SQL, host name, infrastructure id — never reaches the client. | constitutional |
-| ARC-ERR-6 | The consumer branches on the code, never on the message. | constitutional |
-| ARC-ERR-7 | Every error becomes visible feedback or a propagated failure; an empty `catch`, or one that only logs, is forbidden. | constitutional |
-| ARC-ERR-8 | A remote read has five outcomes — pending, empty, partial, error and success. Each one is decided; none is inherited from the happy path. | constitutional |
+| ID | Law | Class | Gate |
+|---|---|---|---|
+| ARC-ERR-1 | The code catalogue is one per product; never per module. | constitutional | `gate:one-catalogue` |
+| ARC-ERR-2 | The code is stable and is the contract; the message is human and may change. | constitutional | `manual` |
+| ARC-ERR-3 | An error is thrown with a category class and a catalogue key, never with a literal string. | constitutional | `grit:no-literal-throw` |
+| ARC-ERR-4 | The category decides the meaning, and meaning has a layer: shape → boundary; existence → operation; rule → domain; identity and permission → security. | constitutional | `manual` |
+| ARC-ERR-5 | Internal detail — stack, SQL, host name, infrastructure id — never reaches the client. | constitutional | `gate:error-envelope` |
+| ARC-ERR-6 | The consumer branches on the code, never on the message. | constitutional | `grit:no-branch-on-message` |
+| ARC-ERR-7 | Every error becomes visible feedback or a propagated failure; an empty `catch`, or one that only logs, is forbidden. | constitutional | `grit:no-empty-catch` |
+| ARC-ERR-8 | A remote read has five outcomes — pending, empty, partial, error and success. Each one is decided; none is inherited from the happy path. | constitutional | `test:five-outcomes` |
+| ARC-ERR-9 | Unavailability is stated, never hidden: a blocked action stays visible and inert with its reason; a denied surface renders the reason in place of the content. Removing the affordance is forbidden. | constitutional | `test:denial-visible` |
 
 ## Seam · the catalogue
 
@@ -57,7 +62,7 @@ dependency failed         integration    a third party broke
 unexpected                any            bug — the only one that becomes an alert
 ```
 
-A rule error emitted at the boundary is a sign that the rule leaked (`ARC-6`).
+A rule error emitted at the boundary is a sign that the rule leaked (`ARC-DEL-1`).
 The wrong category is not cosmetic: it lies about the architecture.
 
 ## ARC-ERR-5 · what the client sees
@@ -117,6 +122,120 @@ This holds on both sides: a backend operation that consumes a third-party API
 has exactly the same five outcomes, and treating an empty list as a failure — or
 a paginated response as complete — is the same bug under another name.
 
+## ARC-ERR-9 · denial is an answer, and an answer gets shown
+
+There is a sixth situation, and it is not one of the five: the consumer is not
+waiting, there is no data, nothing failed — the capability simply is not
+available to this person, right now.
+
+**Permission is only one of the causes**, and treating this law as "the
+permission law" is the most common way to under-apply it. The blocks that
+actually fill a product screen are business ones:
+
+```text
+cause                    example                                    reason lives in
+─────                    ───────                                    ───────────────
+permission               the role does not carry Edit order         permission catalogue
+entity state             the invoice is already paid                error catalogue
+commercial plan          the organization is on the minimum         error catalogue
+or contract              contract and cannot raise its credit
+                         limit
+unmet dependency         no payment method registered yet           error catalogue
+exhausted limit          10 of 10 seats in use                      error catalogue
+lifecycle                the cycle is closed for editing            error catalogue
+```
+
+Take the contract line, because it is the shape that gets designed worst. An
+organization on the minimum tier opens the credit settings and the "Raise credit
+limit" control is not there. Nothing on that screen says the capability exists,
+that the tier is what blocks it, or that a higher tier unblocks it. The customer
+concludes the product does not do it — and the commercial team finds out months
+later, if at all. The same screen with the control **inert and carrying
+"Raising the credit limit requires a contract above the minimum tier"** answers
+the question and, incidentally, is the only version that sells anything.
+
+That is the general shape of a business block: the blocked control is where the
+user is **already standing**, which makes it the cheapest place in the product to
+explain a rule — and erasing it throws that away.
+
+The default reflex is exactly that erasure. That reflex costs more than it saves:
+
+```text
+the affordance vanished
+├── the user does not know the capability exists     → they ask support
+├── the user does not know what would unlock it      → nobody can act on it
+├── two accounts see two different screens           → "it works on my machine",
+│                                                       for the same build
+└── the absence looks like a bug                     → a ticket about a feature
+                                                       that is working as designed
+```
+
+An inert affordance with a stated reason answers all four in one line of copy.
+The screen stops being a puzzle: the capability is there, it is off, and the
+sentence next to it says what turns it on.
+
+Denial has two shapes, by what was denied:
+
+```text
+an action        stays visible and inert, carrying its reason
+                 ("requires the Edit order permission",
+                  "the invoice is already paid",
+                  "requires a contract above the minimum tier")
+
+a surface        renders the reason in place of the content, in the shape of
+(list, table,    an empty state — no retry, because retrying changes nothing
+ panel, page)    ("you do not have access to these records",
+                  "usage reports start on the Business plan")
+```
+
+When something **does** unlock the capability, the reason says what, and the
+surface offers the path when the product has one — `Request access`, `Compare
+plans`, `Add a payment method`. A reason with no exit is honest; a reason with
+the exit next to it is the product working.
+
+The second shape matters because a denied read is **not** an error, and rendering
+it as one produces a retry button that will fail forever. It is not an empty
+state either: "there is nothing here" and "you may not see what is here" are
+different facts about the world, and collapsing them lies to the user
+(`ARC-ERR-8` already separates them; this law says what to render).
+
+Two boundaries keep the law from being misread:
+
+```text
+not enforcement    an inert control is presentation, and the backend
+                   revalidates every request just the same (ARC-SEC-2)
+
+not a leak         the reason names the missing permission or the blocking
+                   state — never another entity's data, never internal
+                   detail (ARC-SEC-7, ARC-ERR-5)
+```
+
+The reason is contract, not prose invented at the call site: it comes from the
+error catalogue or from the permission catalogue (`ARC-ERR-1`, `ARC-SEC-12`),
+which is what keeps "why is this off?" answered the same way on every screen.
+
+And **who decides the block** follows the same split as every other rule:
+
+```text
+the block is a business rule            the authority publishes the verdict
+(contract tier, quota, lifecycle)       in the contract — the consumer renders
+                                        the flag and its reason, it does not
+                                        re-derive the rule (ARC-DEL-1, ARC-CTR-1)
+
+the block is a fact already in hand     the consumer reads the field it already
+(status is `paid`, list is empty)       has; no round trip for something the
+                                        response already answered
+```
+
+Re-deriving "the minimum contract cannot raise the credit limit" in the consumer
+is the rule leaking out of the domain: the day the tiers change, the screen keeps
+blocking by the old rule and nothing fails loud. A published verdict — a flag
+plus its catalogue reason — moves with the rule.
+
+Transient states are outside this law. A control disabled while its own action is
+in flight is `ARC-ERR-8`'s `pending` wearing a different hat — the indicator is
+already the reason, and no sentence is owed.
+
 ## Never do
 
 - Create a per-module error catalogue.
@@ -128,3 +247,8 @@ a paginated response as complete — is the same bug under another name.
 - Treat "has not arrived yet" as "does not exist".
 - Render a partial response as if it were the complete set.
 - Confuse "failed to load" with "you do not have permission".
+- Erase an action from the surface because it is unavailable.
+- Leave a control inert with no reason next to it.
+- Render a denied read as an error with retry, or as an empty state.
+- Write the reason by hand at the call site instead of taking it from the
+  catalogue.

@@ -4,17 +4,21 @@
 one, and everything else derives from it. Every time someone rewrites a type by
 hand, they create a second truth that will diverge — the only question is when.
 
+**Rules defined here:** `ARC-CTR-1` · `ARC-CTR-2` · `ARC-CTR-3` · `ARC-CTR-4`
+· `ARC-CTR-5` · `ARC-CTR-6` · `ARC-CTR-7` — the law is the *Invariants* table
+below; every ❌ item cites the id it violates.
+
 ## Invariants
 
-| ID | Law | class |
-|---|---|---|
-| ARC-CTR-1 | A contract is declared once; downstream types derive by inference or projection. | constitutional |
-| ARC-CTR-2 | A relationship is imported from the owning module; never redeclared in the consumer. | constitutional |
-| ARC-CTR-3 | A module exposes an **Identity** — key and identifying fields — to be referenced by others. Never the whole entity. | constitutional |
-| ARC-CTR-4 | A generated artifact is immutable: never edited by hand. | constitutional |
-| ARC-CTR-5 | A symbol missing from the generated contract is a contract blocker, not a license for provisional access outside it. | constitutional |
-| ARC-CTR-6 | A contract-breaking change ships in a way that is compatible with the rollout: both versions coexist while a consumer remains. | constitutional |
-| ARC-CTR-7 | Data that comes from the contract stays derived from its source; it is never copied into local state that starts living on its own. | constitutional |
+| ID | Law | Class | Gate |
+|---|---|---|---|
+| ARC-CTR-1 | A contract is declared once; downstream types derive by inference or projection. | constitutional | `gate:sdk-shadow` |
+| ARC-CTR-2 | A relationship is imported from the owning module; never redeclared in the consumer. | constitutional | `manual` |
+| ARC-CTR-3 | A module exposes an **Identity** — key and identifying fields — to be referenced by others. Never the whole entity. | constitutional | `manual` |
+| ARC-CTR-4 | A generated artifact is immutable: never edited by hand. | constitutional | `gate:generated-untouched` |
+| ARC-CTR-5 | A symbol missing from the generated contract is a contract blocker, not a license for provisional access outside it. | constitutional | `manual` |
+| ARC-CTR-6 | A contract-breaking change ships in a way that is compatible with the rollout: both versions coexist while a consumer remains. | constitutional | `gate:contract-delta` |
+| ARC-CTR-7 | Data that comes from the contract stays derived from its source; it is never copied into local state that starts living on its own. | constitutional | `grit:no-server-state-copy` |
 
 ## Seam · the generated contract
 

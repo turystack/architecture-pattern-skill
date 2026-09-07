@@ -5,17 +5,22 @@ turning into a graph. It is not a folder convention: it is the rule that decides
 what may import what, and it is the cheapest to check and the most expensive to
 recover.
 
+**Rules defined here:** `ARC-LAY-1` · `ARC-LAY-2` · `ARC-LAY-3` · `ARC-LAY-4`
+· `ARC-LAY-5` · `ARC-LAY-6` · `ARC-LAY-7` · `ARC-LAY-8` — the law is the
+*Invariants* table below; every ❌ item cites the id it violates.
+
 ## Invariants
 
-| ID | Law | class |
-|---|---|---|
-| ARC-LAY-1 | Dependency order: contract → domain → operation → delivery. Never the reverse. | constitutional |
-| ARC-LAY-2 | The domain imports no transport, no persistence, no adapter and no framework. | constitutional |
-| ARC-LAY-3 | The delivery boundary does not import persistence directly. | constitutional |
-| ARC-LAY-4 | A module is a consistency boundary; cross-module access only through its public operation. | constitutional |
-| ARC-LAY-5 | The barrel exposes the public surface; an import that reaches inside another module is forbidden. | constitutional |
-| ARC-LAY-6 | There is no mandatory technical layer folder (`infrastructure/`, `strategies/`, `helpers/`). | constitutional |
-| ARC-LAY-7 | A specific helper lives with its owner; `support/` only when cross-use is real, and only for pure functions. | constitutional |
+| ID | Law | Class | Gate |
+|---|---|---|---|
+| ARC-LAY-1 | Dependency order: contract → domain → operation → delivery. Never the reverse. | constitutional | `biome:noRestrictedImports` |
+| ARC-LAY-2 | The domain imports no transport, no persistence, no adapter and no framework. | constitutional | `biome:noRestrictedImports` |
+| ARC-LAY-3 | The delivery boundary does not import persistence directly. | constitutional | `biome:noRestrictedImports` |
+| ARC-LAY-4 | A module is a consistency boundary; cross-module access only through its public operation. | constitutional | `biome:noRestrictedImports` |
+| ARC-LAY-5 | The barrel exposes the public surface; an import that reaches inside another module is forbidden. | constitutional | `biome:noRestrictedImports` |
+| ARC-LAY-6 | Organization is by domain/feature. There is no mandatory technical layer folder (`infrastructure/`, `strategies/`, `helpers/`) and no global folder that groups files by technical type. | constitutional | `gate:folder-shape` |
+| ARC-LAY-7 | A specific helper lives with its owner; `support/` only when cross-use is real, and only for pure functions. | constitutional | `gate:folder-shape` |
+| ARC-LAY-8 | Infrastructure covered by an owned library is used directly, never wrapped again. An integration without a library sits behind an interface owned by the application, and the implementation is injected from outside. | constitutional | `biome:noRestrictedImports` |
 
 ## Why ARC-LAY-4 and not "direct access to the other module's repository"
 
@@ -46,7 +51,7 @@ evolve without coordinating with its neighbors.
 
 If the domain needs to talk to the world — send an email, charge a card — it
 declares **what it needs**, not **who does it**. The implementation is injected
-from outside (`ARC-14`).
+from outside (`ARC-LAY-8`).
 
 ## The ARC-LAY-2 test
 
