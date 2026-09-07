@@ -3,7 +3,14 @@
 **Concept.** An error is a contract. The code the backend emits is the code the
 frontend branches on, and that is why this section lives in the constitution and
 not in a stack skill. A catalogue with no owner is a contract that drifts with
-nobody noticing.
+nobody noticing — so the owner is the domain whose rule the code describes, and
+the prefix it publishes under is that domain's name.
+
+This replaces a shared catalogue package, which put codes belonging to four
+domains in a file none of them owned: the reason to raise a code lived in one
+package and its declaration in another, and the two drifted in the direction
+they always do. Uniqueness is not lost by moving it — the prefix is the domain's
+package name, and two packages cannot share one.
 
 **Rules defined here:** `ARC-ERR-1` · `ARC-ERR-2` · `ARC-ERR-3` · `ARC-ERR-4`
 · `ARC-ERR-5` · `ARC-ERR-6` · `ARC-ERR-7` · `ARC-ERR-8` · `ARC-ERR-9` — the
@@ -13,7 +20,7 @@ law is the *Invariants* table below; every ❌ item cites the id it violates.
 
 | ID | Law | Class | Gate |
 |---|---|---|---|
-| ARC-ERR-1 | The code catalogue is one per product; never per module. | constitutional | `gate:one-catalogue` |
+| ARC-ERR-1 | A domain owns its codes and publishes them; the catalogue's prefix is the domain's name, which is what keeps two codes from meaning two things. | constitutional | `gate:one-catalogue` |
 | ARC-ERR-2 | The code is stable and is the contract; the message is human and may change. | constitutional | `manual` |
 | ARC-ERR-3 | An error is thrown with a category class and a catalogue key, never with a literal string. | constitutional | `grit:no-literal-throw` |
 | ARC-ERR-4 | The category decides the meaning, and meaning has a layer: shape → boundary; existence → operation; rule → domain; identity and permission → security. | constitutional | `manual` |
